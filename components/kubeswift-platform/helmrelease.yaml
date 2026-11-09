@@ -1,0 +1,70 @@
+# KubeSwift itself. Release name, namespace and storage match a pre-existing
+# `helm install kubeswift -n kubeswift-system`, so helm-controller adopts that
+# release instead of installing a second one.
+#
+# Site-specific values (ingress hostnames, OIDC issuer) are not in this public
+# repository: they come from the cluster-local ConfigMap kubeswift-site-values
+# (see BOOTSTRAP.md in the demo workspace). Everything generic is here.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kubeswift
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  releaseName: kubeswift
+  targetNamespace: kubeswift-system
+  storageNamespace: kubeswift-system
+  chartRef:
+    kind: OCIRepository
+    name: kubeswift-chart
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 2
+  upgrade:
+    crds: CreateReplace        # helm alone never upgrades crds/; the API server
+                               # silently drops fields a stale CRD does not know
+    remediation:
+      retries: 2
+  valuesFrom:
+    - kind: ConfigMap
+      name: kubeswift-site-values
+      valuesKey: values.yaml
+  values:
+    controllerManager:
+      image: { tag: v0.23.0 }
+      metrics:
+        secure: true
+        readers:
+          - name: monitoring-kube-prometheus-prometheus
+            namespace: monitoring
+    swiftletd:          { image: { tag: v0.23.0 } }
+    sandboxMaterialize: { image: { tag: v0.23.0 } }
+    snapshotORAS:       { image: { tag: v0.23.0 } }
+    snapshotS3:         { image: { tag: v0.23.0 } }
+    migrationStunnel:   { image: { tag: v0.23.0 } }
+    gpuDiscovery:
+      enabled: true
+      image: { tag: v0.23.0 }
+    dra:
+      enabled: true
+      image: { tag: v0.23.0 }
+      deviceClass: { create: false }
+    gateway:
+      enabled: true
+      authMode: oidc
+      image: { tag: v0.23.0 }
+    ui:
+      enabled: true
+      image: { tag: v0.13.1 }
+    federation:
+      role: hub
+    webhook:
+      enabled: true      # needs cert-manager
+    monitoring:
+      enabled: true
+      prometheusRule: { additionalLabels: { release: monitoring } }
+      serviceMonitor: { additionalLabels: { release: monitoring } }
+    swiftGuest: {}

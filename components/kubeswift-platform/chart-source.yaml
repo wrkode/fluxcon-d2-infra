@@ -1,0 +1,20 @@
+# The KubeSwift Helm chart, pulled from its OCI registry and accepted only if it
+# carries a keyless Cosign signature from the KubeSwift release workflow.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: kubeswift-chart
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://ghcr.io/kubeswift-io/charts/kubeswift
+  ref:
+    tag: "0.23.0"
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  verify:
+    provider: cosign
+    matchOIDCIdentity:
+      - issuer: ^https://token\.actions\.githubusercontent\.com$
+        subject: ^https://github\.com/kubeswift-io/kubeswift/\.github/workflows/release-stable\.yaml@refs/tags/v0\.23\.0$

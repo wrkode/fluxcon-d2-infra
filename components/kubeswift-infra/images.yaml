@@ -1,0 +1,36 @@
+# Two golden VM disks built by .github/workflows/golden-images.yaml and pinned
+# by DIGEST (a tag is mutable). They differ in content: the baked-in HTTP
+# endpoint reports version=v1 or version=v2.
+apiVersion: image.kubeswift.io/v1alpha1
+kind: SwiftImage
+metadata:
+  name: web-v1
+  namespace: workloads
+spec:
+  source:
+    oci:
+      repository: ghcr.io/wrkode/fluxcon-d2-infra/vm-images
+      digest: sha256:deabf535dccfced870181ddb18c332e4b7b490aa9d444b572bd467ccde0416b6
+  format: raw
+  rootDisk:
+    size: 4Gi
+  importStorageClassName: ceph-block
+  cloneStrategy: snapshot
+  volumeSnapshotClassName: ceph-block-vsc
+---
+apiVersion: image.kubeswift.io/v1alpha1
+kind: SwiftImage
+metadata:
+  name: web-v2
+  namespace: workloads
+spec:
+  source:
+    oci:
+      repository: ghcr.io/wrkode/fluxcon-d2-infra/vm-images
+      digest: sha256:b09fcc59a9d3ed02f553e5639dfe0f076853510c8f93078f9c777696d7499146
+  format: raw
+  rootDisk:
+    size: 4Gi
+  importStorageClassName: ceph-block
+  cloneStrategy: snapshot
+  volumeSnapshotClassName: ceph-block-vsc

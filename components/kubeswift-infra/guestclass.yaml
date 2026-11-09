@@ -1,0 +1,17 @@
+# Small guests for the web fleet. Root disks are Rook Ceph RBD clones of the
+# image (cloneStrategy: snapshot on the SwiftImage): a copy-on-write clone is a
+# metadata operation, so five guests start together instead of queueing copies.
+apiVersion: swift.kubeswift.io/v1alpha1
+kind: SwiftGuestClass
+metadata:
+  name: fluxcon-web
+spec:
+  cpu: 1
+  memory: 1Gi
+  rootDisk:
+    format: raw
+    size: 4Gi
+  storage:
+    storageClassName: ceph-block
+    accessMode: ReadWriteOnce
+    volumeMode: Filesystem

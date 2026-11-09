@@ -1,0 +1,14 @@
+# Minimal NoCloud seed. metaData is omitted on purpose: KubeSwift then defaults
+# instance-id/local-hostname per guest, so each VM answers with its own name.
+apiVersion: seed.kubeswift.io/v1alpha1
+kind: SwiftSeedProfile
+metadata:
+  name: web
+  namespace: workloads
+spec:
+  datasource: NoCloud
+  userData: |
+    #cloud-config
+    ssh_pwauth: false
+    runcmd:
+      - systemctl enable --now getty@ttyS0.service
