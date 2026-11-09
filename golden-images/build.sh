@@ -14,7 +14,7 @@ echo "${BASE_SHA256}  base.img" | sha256sum -c -
 out="web-${VERSION}.qcow2"
 cp base.img "$out"
 printf '%s\n' "$VERSION" > version
-virt-customize -a "$out" \
+virt-customize --no-network -a "$out" \
   --mkdir /etc/fluxcon \
   --upload version:/etc/fluxcon/version \
   --upload "$here/fluxcon-web.py:/usr/local/bin/fluxcon-web" \
