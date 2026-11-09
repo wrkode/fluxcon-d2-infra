@@ -10,6 +10,11 @@ kind: HelmRelease
 metadata:
   name: kubeswift
   namespace: flux-system
+  annotations:
+    # Never garbage-collect this object: deleting a HelmRelease uninstalls the
+    # release, i.e. KubeSwift itself. Removing it from Git (or deleting the
+    # ResourceSet/Kustomization) leaves the release in place.
+    kustomize.toolkit.fluxcd.io/prune: disabled
 spec:
   interval: 30m
   timeout: 10m
