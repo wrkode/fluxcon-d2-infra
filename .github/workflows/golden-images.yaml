@@ -1,0 +1,60 @@
+# Builds the two golden VM disks (web-v1, web-v2) and publishes them to GHCR
+# as KubeSwift chunked VM-disk artifacts. This is the OTHER OCI content type in
+# the demo: a VM disk, consumed by SwiftImage.spec.source.oci and pinned by
+# digest in components/kubeswift-infra. Setup only; never part of the live demo.
+name: golden-images
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: "space-separated versions to build"
+        default: "v1 v2"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        version: [v1, v2]
+    steps:
+      - name: Skip versions not requested
+        id: want
+        run: |
+          if [[ " ${{ inputs.versions }} " == *" ${{ matrix.version }} "* ]]; then echo "build=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.want.outputs.build == 'true'
+      - name: Install libguestfs and qemu-img
+        if: steps.want.outputs.build == 'true'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq --no-install-recommends libguestfs-tools qemu-utils
+          sudo chmod 0644 /boot/vmlinuz-*
+      - name: Install swiftctl (KubeSwift v0.23.0 release asset, checksum-verified)
+        if: steps.want.outputs.build == 'true'
+        run: |
+          gh release download v0.23.0 -R kubeswift-io/kubeswift -p swiftctl-linux-amd64 -p SHA256SUMS
+          grep ' swiftctl-linux-amd64$' SHA256SUMS | sha256sum -c -
+          install -m 0755 swiftctl-linux-amd64 /usr/local/bin/swiftctl
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Build web-${{ matrix.version }}
+        if: steps.want.outputs.build == 'true'
+        run: sudo -E ./golden-images/build.sh ${{ matrix.version }} && sudo chown "$USER" web-*.qcow2
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        if: steps.want.outputs.build == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish VM disk artifact
+        if: steps.want.outputs.build == 'true'
+        run: |
+          swiftctl image publish web-${{ matrix.version }}.qcow2 \
+            --to ghcr.io/${{ github.repository }}/vm-images --tag web-${{ matrix.version }} | tee publish.txt
+          echo "### web-${{ matrix.version }}" >> "$GITHUB_STEP_SUMMARY"
+          sed 's/^/    /' publish.txt >> "$GITHUB_STEP_SUMMARY"

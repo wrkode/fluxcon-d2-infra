@@ -1,0 +1,13 @@
+[Unit]
+Description=FluxCon demo HTTP endpoint (version + guest identity)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/fluxcon-web
+Restart=always
+RestartSec=1
+DynamicUser=yes
+
+[Install]
+WantedBy=multi-user.target
